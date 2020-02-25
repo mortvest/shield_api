@@ -1,6 +1,6 @@
 from flask_sqlalchemy import Pagination
 
-class Response(ABC):
+class Response():
     def __init__(self, status_code, message, result):
         self.status_code = status_code
         self.message = message

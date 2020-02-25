@@ -37,9 +37,9 @@ def add_toydata_command():
 
     print("Adding toy data")
     now = dt.datetime.today()
-    users = [models.User(1, "David", "Smith", now, now),
-             models.User(2, "John", "Doe", now, now),
-             models.User(3, "Mike", "Loke", now, now)
+    users = [models.User("dave11", "qwerty", "David", "Smith", now, now),
+             models.User("john12", "qwerty", "John", "Doe", now, now),
+             models.User("micko1", "qwerty", "Mike", "Loke", now, now)
     ]
     add_objects(users)
     db.session.commit()
