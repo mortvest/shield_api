@@ -1,6 +1,7 @@
 from flask import Flask
 from config import Config
 from flask_sqlalchemy import SQLAlchemy
+import datetime as dt
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -14,7 +15,7 @@ def resetdb_command():
 
     from sqlalchemy_utils import database_exists, create_database, drop_database
     if database_exists(app.config['DB_URL']):
-        print("Deleting database")
+        print("Dropping database")
         drop_database(app.config['DB_URL'])
     if not database_exists(app.config['DB_URL']):
         print("Creating database")
@@ -24,16 +25,32 @@ def resetdb_command():
     db.create_all()
     print("Done")
 
+def add_objects(objects):
+    for o in objects:
+        db.session.add(o)
+
 @app.cli.command('add_toydata')
 def add_toydata_command():
     """Adds toydata to tables for testing """
 
     print("Adding toy data")
-    users = [models.User(1, "David", "Smith"),
-             models.User(2, "John", "Doe"),
-             models.User(3, "Mike", "Loke")
+    now = dt.datetime.today()
+    users = [models.User(1, "David", "Smith", now, now),
+             models.User(2, "John", "Doe", now, now),
+             models.User(3, "Mike", "Loke", now, now)
     ]
-    for u in users:
-        db.session.add(u)
+    add_objects(users)
+    db.session.commit()
+
+    linkedin_posts = [models.LinkedinPost(1, 1, now, now),
+                     models.LinkedinPost(2, 2, now, now)
+    ]
+    add_objects(linkedin_posts)
+    db.session.commit()
+
+    linkedin_post_stats = [models.LinkedinPostStatistic(1, 1, 0, 0, 0, now, now),
+                          models.LinkedinPostStatistic(2, 2, 10, 0, 0, now, now)
+    ]
+    add_objects(linkedin_post_stats)
     db.session.commit()
     print("Done")
