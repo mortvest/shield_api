@@ -1,6 +1,7 @@
 from app import db
 from datetime import datetime
 
+
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -29,8 +30,9 @@ class User(db.Model):
                 "first_name": self.first_name,
                 "last_name": self.last_name,
                 "created_at": self.created_at,
-                "updated_at": self.updataed_at
+                "updated_at": self.updated_at
                 }
+
 
 class LinkedinPost(db.Model):
     __tablename__ = 'linkedin_post'
@@ -55,10 +57,11 @@ class LinkedinPost(db.Model):
                 "updated_at": self.updated_at
                 }
 
+
 class LinkedinPostStatistic(db.Model):
     __tablename__ = 'linkedin_post_statistic'
     id = db.Column(db.Integer, primary_key=True)
-    linkedin_post_id = db.Column(db.Integer, db.ForeignKey('linkedin_post.id'))
+    linkedin_post_id = db.Column(db.Integer, db.ForeignKey('linkedin_post.id'), index=True)
     num_views = db.Column(db.Integer)
     num_likes = db.Column(db.Integer)
     num_comments = db.Column(db.Integer)
