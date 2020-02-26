@@ -43,7 +43,6 @@ def add_toydata_command():
     now = dt.datetime.today()
 
     groups = [models.UserGroup("admin"),
-              models.UserGroup("moderator"),
               models.UserGroup("user")
               ]
     add_objects(groups)
@@ -54,15 +53,15 @@ def add_toydata_command():
     ]
     add_objects(users)
 
-    au = models.User("john12", "qwerty", "John", "Doe")
+    au = models.User("admin", "qwerty", "John", "Doe")
     au.groups.append(groups[0])
     au.groups.append(groups[1])
     db.session.add(au)
 
     db.session.commit()
 
-    linkedin_posts = [models.LinkedinPost(1),
-                     models.LinkedinPost(2)
+    linkedin_posts = [models.LinkedinPost(1, content="Content 1"),
+                     models.LinkedinPost(2, content="Content 2")
     ]
     add_objects(linkedin_posts)
     db.session.commit()

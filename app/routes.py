@@ -6,7 +6,7 @@ from flask_jwt_extended import (
 )
 from schema import Schema, And, Use, Optional
 
-from app import app, jwt
+from app import app, jwt, db
 from app.response import *
 from app.models import *
 from app.access import *
@@ -21,7 +21,6 @@ user_permission = Permission(['user', 'admin'])
 def register():
     if not request.is_json:
         return form_response(ErrorResponse())
-    print(request.json)
     data = request.json
     check = And(str, lambda s: len(s) > 0 and len(s) <= 64)
     schema = Schema({'username': check,
@@ -29,7 +28,6 @@ def register():
                      'first_name': check,
                      'last_name': check
                     })
-    print("validated")
     if schema.is_valid(data):
         # check if username is already in the database
         already_exists = User.query.filter_by(username=data["username"]).first()
@@ -63,7 +61,7 @@ def login():
     return form_response(ErrorResponse("wrong username or password"))
 
 
-@app.route('/logout')
+@app.route('/logout', methods=['POST'])
 @user_permission
 def logout():
     # get the token data
@@ -81,7 +79,7 @@ def users():
     return form_response(ListResponse(users))
 
 
-@app.route('/user/<user_id>/')
+@app.route('/user/<user_id>/', methods=['GET'])
 @admin_permission
 def user(user_id):
     user = User.query.filter_by(id=user_id).first()
@@ -98,21 +96,70 @@ def user_posts(user_id):
     return form_response(ListResponse(posts))
 
 
-@app.route('/posts')
+@app.route('/posts', methods=['GET'])
 @user_permission
 def posts():
     posts = LinkedinPost.query.paginate()
     return form_response(ListResponse(posts))
 
 
-@app.route('/posts/<post_id>')
+@app.route('/posts', methods=['POST'])
 @user_permission
-def post(post_id):
+def add_post():
+    if not request.is_json:
+        return form_response(ErrorResponse())
+    data = request.json
+    schema = Schema({"user_id": And(int, lambda i: i > 0),
+                     "content": And(str, lambda s: len(s) > 0 and len(s) <= 512)
+                    })
+    if schema.is_valid(data):
+        # check if user_id exists
+        if User.query.filter_by(id=data['user_id']).first():
+            post = LinkedinPost(data['user_id'], content=data['content'])
+            post.add()
+            return form_response(SingleResponse({}))
+    return form_response(ErrorResponse("wrong data format"))
+
+
+@app.route('/posts/<post_id>', methods=['GET'])
+@user_permission
+def get_post(post_id):
     post = User.query.filter_by(id=post_id).first()
     if post:
         return form_response(SingleResponse(post))
     else:
         return form_response(ErrorResponse())
+
+
+@app.route('/posts/<post_id>', methods=['PUT'])
+@admin_permission
+# @user_permission
+def update_post(post_id):
+    if not request.is_json:
+        return form_response(ErrorResponse())
+    data = request.json
+    schema = Schema({Optional("id"): int,
+                     Optional("user_id"): int,
+                     "content": And(str, lambda s: len(s) > 0 and len(s) <= 512)
+                    })
+    if schema.is_valid(data):
+        post = LinkedinPost.query.filter_by(id=int(post_id)).first()
+        if post:
+            post.content = data['content']
+            post.update()
+            return form_response(SingleResponse({}))
+    return form_response(ErrorResponse("wrong data format"))
+
+
+@app.route('/posts/<post_id>', methods=['DELETE'])
+@admin_permission
+# @user_permission
+def delete_post(post_id):
+    post = LinkedinPost.query.filter_by(id=int(post_id)).first()
+    if post:
+        post.delete()
+        return form_response(SingleResponse({}))
+    return form_response(ErrorResponse("post could not be found"))
 
 
 @app.route('/posts/<post_id>/statistics')

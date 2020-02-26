@@ -15,6 +15,13 @@ class BaseModel(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def update(self):
+        db.session.commit()
+
 
 class Entity(BaseModel):
     """
@@ -50,8 +57,11 @@ class User(Entity):
                  password,
                  first_name,
                  last_name,
+                 id=None,
                  created_at=datetime.today(),
                  updated_at=datetime.today()):
+        if id:
+            self.id = id
         self.username = username
         self.set_password(password)
         self.first_name = first_name
@@ -92,9 +102,23 @@ class User(Entity):
 class LinkedinPost(Entity):
     __tablename__ = 'linkedin_post'
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    content = db.Column(db.String(512))
+    statistics = db.relationship('LinkedinPostStatistic',
+                                 backref='linkedin_post',
+                                 lazy=True,
+                                 cascade="delete, all")
 
-    def __init__(self, user_id, created_at=datetime.today(), updated_at=datetime.today()):
+
+    def __init__(self,
+                 user_id,
+                 id=None,
+                 content="",
+                 created_at=datetime.today(),
+                 updated_at=datetime.today()):
+        if id:
+            self.id = id
         self.user_id = user_id
+        self.content = content
         self.created_at = created_at
         self.updated_at = updated_at
 
@@ -104,6 +128,7 @@ class LinkedinPost(Entity):
     def serialize(self):
         return {"id": self.id,
                 "user_id": self.user_id,
+                "content": self.content,
                 "created_at": self.created_at,
                 "updated_at": self.updated_at
                 }
@@ -111,18 +136,23 @@ class LinkedinPost(Entity):
 
 class LinkedinPostStatistic(Entity):
     __tablename__ = 'linkedin_post_statistic'
-    linkedin_post_id = db.Column(db.Integer, db.ForeignKey('linkedin_post.id'), index=True)
+    linkedin_post_id = db.Column(db.Integer,
+                                 db.ForeignKey('linkedin_post.id'),
+                                 index=True)
     num_views = db.Column(db.Integer)
     num_likes = db.Column(db.Integer)
     num_comments = db.Column(db.Integer)
 
     def __init__(self,
                  linkedin_post_id,
+                 id=None,
                  num_views=0,
                  num_likes=0,
                  num_comments=0,
                  created_at=datetime.today(),
                  updated_at=datetime.today()):
+        if id:
+            self.id = id
         self.linkedin_post_id = linkedin_post_id
         self.num_views = num_views,
         self.num_likes = num_likes,
@@ -148,7 +178,9 @@ class UserGroup(BaseModel):
     __tablename__ = 'user_group'
     group_name = db.Column(db.String(64), index=True, unique=True)
 
-    def __init__(self, group_name):
+    def __init__(self, group_name, id=None):
+        if id:
+            self.id = id
         self.group_name = group_name
 
     def __repr__(self):
@@ -167,7 +199,9 @@ class RevokedToken(BaseModel):
     __tablename__ = 'revoked_token'
     jti = db.Column(db.String(120), index=True)
 
-    def __init__(self, jti):
+    def __init__(self, jti, id=None):
+        if id:
+            self.id = id
         self.jti = jti
 
     @classmethod
