@@ -12,6 +12,7 @@ from app.models import *
 from app.access import *
 
 
+# custom decorators for user group access
 admin_permission = Permission(['admin'])
 user_permission = Permission(['user', 'admin'])
 
@@ -20,22 +21,25 @@ user_permission = Permission(['user', 'admin'])
 def register():
     if not request.is_json:
         return form_response(ErrorResponse())
+    print(request.json)
     data = request.json
-    check = And(str, lambda s: len(s) > 3 and len(s) <= 64)
+    check = And(str, lambda s: len(s) > 0 and len(s) <= 64)
     schema = Schema({'username': check,
                      'password': check,
                      'first_name': check,
                      'last_name': check
                     })
-
+    print("validated")
     if schema.is_valid(data):
         # check if username is already in the database
         already_exists = User.query.filter_by(username=data["username"]).first()
         if already_exists:
             return form_response(ErrorResponse("username already exists"))
         else:
-            u = User(data["username"], data["password"], data["first_name"], data["last_name"])
-            u.add()
+            user = User(data["username"], data["password"], data["first_name"], data["last_name"])
+            group = UserGroup.query.filter_by(group_name="user").first()
+            user.groups.append(group)
+            user.add()
             return form_response(SingleResponse({}))
     return form_response(ErrorResponse("wrong data format"))
 
@@ -46,7 +50,7 @@ def login():
         return form_response(ErrorResponse())
 
     data = request.json
-    check = And(str, lambda s: len(s) > 3 and len(s) <= 64)
+    check = And(str, lambda s: len(s) > 0 and len(s) <= 64)
     schema = Schema({'username': check,
                      'password': check
                      })

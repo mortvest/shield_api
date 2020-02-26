@@ -25,6 +25,7 @@ class Permission():
         def wrapper(*args, **kwargs):
             verify_jwt_in_request()
             claims = get_jwt_claims()
+            print(claims)
             if set.intersection(set(self.groups), set(claims['groups'])) == set():
                 return form_response(AuthorizationErrorResponse())
             else:

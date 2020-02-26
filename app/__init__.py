@@ -11,6 +11,7 @@ jwt = JWTManager(app)
 
 from app import routes, models
 
+
 @app.cli.command('resetdb')
 def resetdb_command():
     """Drops and creates the database and tables."""
@@ -27,9 +28,11 @@ def resetdb_command():
     db.create_all()
     print("Done")
 
+
 def add_objects(objects):
     for o in objects:
         db.session.add(o)
+
 
 @app.cli.command('add_toydata')
 def add_toydata_command():
@@ -46,26 +49,26 @@ def add_toydata_command():
     add_objects(groups)
     db.session.commit()
 
-    users = [models.User("dave11", "qwerty", "David", "Smith", now, now),
-             models.User("micko1", "qwerty", "Mike", "Loke", now, now)
+    users = [models.User("dave11", "qwerty", "David", "Smith"),
+             models.User("micko1", "qwerty", "Mike", "Loke")
     ]
     add_objects(users)
 
-    au = models.User("john12", "qwerty", "John", "Doe", now, now)
+    au = models.User("john12", "qwerty", "John", "Doe")
     au.groups.append(groups[0])
     au.groups.append(groups[1])
     db.session.add(au)
 
     db.session.commit()
 
-    linkedin_posts = [models.LinkedinPost(1, 1, now, now),
-                     models.LinkedinPost(2, 2, now, now)
+    linkedin_posts = [models.LinkedinPost(1),
+                     models.LinkedinPost(2)
     ]
     add_objects(linkedin_posts)
     db.session.commit()
 
-    linkedin_post_stats = [models.LinkedinPostStatistic(1, 1, 0, 0, 0, now, now),
-                          models.LinkedinPostStatistic(2, 2, 10, 0, 0, now, now)
+    linkedin_post_stats = [models.LinkedinPostStatistic(1),
+                          models.LinkedinPostStatistic(2)
     ]
     add_objects(linkedin_post_stats)
     db.session.commit()

@@ -4,17 +4,26 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from abc import ABC, abstractmethod
 
 
-class BaseModel():
+class BaseModel(db.Model):
     """
-    Base class for models
+    Base class for all models
     """
+    __abstract__ = True
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
     def add(self):
         db.session.add(self)
         db.session.commit()
 
-    # @abstractmethod
-    # def serialize(self):
-    #     pass
+
+class Entity(BaseModel):
+    """
+    Base class for entities
+    """
+    __abstract__ = True
+    created_at = db.Column(db.DateTime())
+    updated_at = db.Column(db.DateTime())
+
 
 # Many-to-many relation between UserGroup and User
 group_association = db.Table('group_association',
@@ -23,16 +32,12 @@ group_association = db.Table('group_association',
 )
 
 
-class User(db.Model, BaseModel):
+class User(Entity):
     __tablename__ = 'user'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(64), index=True, unique=True)
     password_hash = db.Column(db.String(128))
     first_name = db.Column(db.String(64), index=True)
     last_name = db.Column(db.String(64), index=True)
-    created_at = db.Column(db.DateTime())
-    updated_at = db.Column(db.DateTime())
-
     groups = db.relationship('UserGroup',
                              secondary=group_association,
                              backref=db.backref('group_association',
@@ -84,15 +89,11 @@ class User(db.Model, BaseModel):
         return list(map(lambda x: x[0], query.all()))
 
 
-class LinkedinPost(db.Model, BaseModel):
+class LinkedinPost(Entity):
     __tablename__ = 'linkedin_post'
-    id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_at = db.Column(db.DateTime())
-    updated_at = db.Column(db.DateTime())
 
-    def __init__(self, id, user_id, created_at=datetime.today(), updated_at=datetime.today()):
-        self.id = id
+    def __init__(self, user_id, created_at=datetime.today(), updated_at=datetime.today()):
         self.user_id = user_id
         self.created_at = created_at
         self.updated_at = updated_at
@@ -108,25 +109,20 @@ class LinkedinPost(db.Model, BaseModel):
                 }
 
 
-class LinkedinPostStatistic(db.Model, BaseModel):
+class LinkedinPostStatistic(Entity):
     __tablename__ = 'linkedin_post_statistic'
-    id = db.Column(db.Integer, primary_key=True)
     linkedin_post_id = db.Column(db.Integer, db.ForeignKey('linkedin_post.id'), index=True)
     num_views = db.Column(db.Integer)
     num_likes = db.Column(db.Integer)
     num_comments = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime())
-    updated_at = db.Column(db.DateTime())
 
     def __init__(self,
-                 id,
                  linkedin_post_id,
                  num_views=0,
                  num_likes=0,
                  num_comments=0,
                  created_at=datetime.today(),
                  updated_at=datetime.today()):
-        self.id = id
         self.linkedin_post_id = linkedin_post_id
         self.num_views = num_views,
         self.num_likes = num_likes,
@@ -148,9 +144,8 @@ class LinkedinPostStatistic(db.Model, BaseModel):
                 }
 
 
-class UserGroup(db.Model, BaseModel):
+class UserGroup(BaseModel):
     __tablename__ = 'user_group'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     group_name = db.Column(db.String(64), index=True, unique=True)
 
     def __init__(self, group_name):
@@ -165,12 +160,11 @@ class UserGroup(db.Model, BaseModel):
                 }
 
 
-class RevokedToken(db.Model, BaseModel):
+class RevokedToken(BaseModel):
     """
     Model for saving revoked tokens. These are used for logging out
     """
     __tablename__ = 'revoked_token'
-    id = db.Column(db.Integer, primary_key = True, autoincrement=True)
     jti = db.Column(db.String(120), index=True)
 
     def __init__(self, jti):
