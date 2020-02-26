@@ -5,6 +5,9 @@ from abc import ABC, abstractmethod
 
 
 class BaseModel():
+    """
+    Base class for models
+    """
     def add(self):
         db.session.add(self)
         db.session.commit()
@@ -12,6 +15,13 @@ class BaseModel():
     # @abstractmethod
     # def serialize(self):
     #     pass
+
+# Many-to-many relation between UserGroup and User
+group_association = db.Table('group_association',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('user_group_id', db.Integer, db.ForeignKey('user_group.id'), primary_key=True)
+)
+
 
 class User(db.Model, BaseModel):
     __tablename__ = 'user'
@@ -23,6 +33,13 @@ class User(db.Model, BaseModel):
     created_at = db.Column(db.DateTime())
     updated_at = db.Column(db.DateTime())
 
+    groups = db.relationship('UserGroup',
+                             secondary=group_association,
+                             backref=db.backref('group_association',
+                                                lazy='dynamic',
+                                                order_by=username
+                             )
+    )
     def __init__(self,
                  username,
                  password,
@@ -54,6 +71,17 @@ class User(db.Model, BaseModel):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def get_group_names(self):
+        """
+        Get a list of names for all the groups that the user is in
+        """
+        query = (db.session.
+                 query(UserGroup).
+                 join(User.groups).
+                 filter(User.id == self.id).
+                 with_entities(UserGroup.group_name))
+        return list(map(lambda x: x[0], query.all()))
 
 
 class LinkedinPost(db.Model, BaseModel):
@@ -120,7 +148,27 @@ class LinkedinPostStatistic(db.Model, BaseModel):
                 }
 
 
+class UserGroup(db.Model, BaseModel):
+    __tablename__ = 'user_group'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    group_name = db.Column(db.String(64), index=True, unique=True)
+
+    def __init__(self, group_name):
+        self.group_name = group_name
+
+    def __repr__(self):
+        return '<Group #{}: {}>'.format(self.id, self.group_name)
+
+    def serialize(self):
+        return {"id": self.id,
+                "group_name": self.group_name
+                }
+
+
 class RevokedToken(db.Model, BaseModel):
+    """
+    Model for saving revoked tokens. These are used for logging out
+    """
     __tablename__ = 'revoked_token'
     id = db.Column(db.Integer, primary_key = True, autoincrement=True)
     jti = db.Column(db.String(120), index=True)

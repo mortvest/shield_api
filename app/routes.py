@@ -1,20 +1,20 @@
 from flask import json, jsonify, request
-from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity, get_raw_jwt
-
+from flask_jwt_extended import (
+    jwt_required,
+    create_access_token,
+    get_raw_jwt,
+)
 from schema import Schema, And, Use, Optional
 
 from app import app, jwt
 from app.response import *
 from app.models import *
+from app.access import *
 
 
-def form_response(data):
-    return jsonify(data.serialize())
+admin_permission = Permission(['admin'])
+user_permission = Permission(['user', 'admin'])
 
-@jwt.token_in_blacklist_loader
-def check_if_token_in_blacklist(decrypted_token):
-    jti = decrypted_token['jti']
-    return RevokedToken.is_jti_blacklisted(jti)
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -23,12 +23,13 @@ def register():
     data = request.json
     check = And(str, lambda s: len(s) > 3 and len(s) <= 64)
     schema = Schema({'username': check,
-                      'password': check,
-                      'first_name': check,
-                      'last_name': check
-                     })
+                     'password': check,
+                     'first_name': check,
+                     'last_name': check
+                    })
 
     if schema.is_valid(data):
+        # check if username is already in the database
         already_exists = User.query.filter_by(username=data["username"]).first()
         if already_exists:
             return form_response(ErrorResponse("username already exists"))
@@ -47,7 +48,7 @@ def login():
     data = request.json
     check = And(str, lambda s: len(s) > 3 and len(s) <= 64)
     schema = Schema({'username': check,
-                      'password': check
+                     'password': check
                      })
 
     if schema.is_valid(data):
@@ -57,36 +58,27 @@ def login():
             return form_response(SingleResponse({"token": access_token}))
     return form_response(ErrorResponse("wrong username or password"))
 
-@jwt.unauthorized_loader
-def unauthorized_loader_callback(_):
-    return form_response(AuthorizationErrorResponse())
-
-@jwt.invalid_token_loader
-def invalid_token_loader_callback(_):
-    return form_response(AuthorizationErrorResponse())
-
-@jwt.revoked_token_loader
-def revoked_token_loader_callback():
-    return form_response(AuthorizationErrorResponse())
-
 
 @app.route('/logout')
-@jwt_required
+@user_permission
 def logout():
+    # get the token data
     jti = get_raw_jwt()['jti']
+    # revoke the token by adding it to the database
     rt = RevokedToken(jti)
     rt.add()
     return form_response(SingleResponse({}))
 
+
 @app.route('/user')
-@jwt_required
+@admin_permission
 def users():
     users = User.query.paginate()
     return form_response(ListResponse(users))
 
 
 @app.route('/user/<user_id>/')
-@jwt_required
+@admin_permission
 def user(user_id):
     user = User.query.filter_by(id=user_id).first()
     if user:
@@ -94,21 +86,23 @@ def user(user_id):
     else:
         return form_response(ErrorResponse())
 
+
 @app.route('/user/<user_id>/posts')
-@jwt_required
+@user_permission
 def user_posts(user_id):
     posts = LinkedinPost.query.filter_by(user_id=user_id).paginate()
     return form_response(ListResponse(posts))
 
 
 @app.route('/posts')
-@jwt_required
+@user_permission
 def posts():
     posts = LinkedinPost.query.paginate()
     return form_response(ListResponse(posts))
 
+
 @app.route('/posts/<post_id>')
-@jwt_required
+@user_permission
 def post(post_id):
     post = User.query.filter_by(id=post_id).first()
     if post:
@@ -116,21 +110,23 @@ def post(post_id):
     else:
         return form_response(ErrorResponse())
 
+
 @app.route('/posts/<post_id>/statistics')
-@jwt_required
+@user_permission
 def post_stats(post_id):
     stats = LinkedinPostStatistic.query.filter_by(linkedin_post_id=post_id).paginate()
     return form_response(ListResponse(stats))
 
 
 @app.route('/statistics')
-@jwt_required
+@user_permission
 def statistics_all():
     statistics = LinkedinPostStatistic.query.paginate()
     return form_response(ListResponse(statistics))
 
+
 @app.route('/statistics/<statistics_id>')
-@jwt_required
+@user_permission
 def statistics(statistics_id):
     stat = LinkedinPostStatistic.query.filter_by(id=statistics_id).first()
     if stat:
