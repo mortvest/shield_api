@@ -11,11 +11,6 @@ from app.response import *
 from app.models import *
 
 
-# custom decorators for user group access
-admin_permission = Permission(['admin'])
-user_permission = Permission(['user', 'admin'])
-
-
 class Permission():
     """
     Decorator creator class for access restriction creation
@@ -36,6 +31,9 @@ class Permission():
                 return fn(*args, **kwargs)
         return wrapper
 
+# custom decorators for user group access
+admin_permission = Permission(['admin'])
+user_permission = Permission(['user', 'admin'])
 
 @jwt.unauthorized_loader
 def unauthorized_loader_callback(_):

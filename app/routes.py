@@ -15,20 +15,19 @@ from app.models import *
 from app.access import *
 
 
-# def json_receiver(self, fn, *args, **kwargs):
-#     @wraps(fn)
-#     def wrapper(*args, **kwargs):
-#         if set.intersection(set(self.groups), set(claims['groups'])) == set():
-#             return form_response(AuthorizationErrorResponse())
-#         else:
-#             return fn(*args, **kwargs)
-#     return wrapper
+def json_receiver(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if request.is_json:
+            return fn(*args, **kwargs)
+        else:
+            return form_response(ErrorResponse("expecting a json"))
+    return wrapper
 
 
 @app.route('/register', methods=['POST'])
+@json_receiver
 def register():
-    if not request.is_json:
-        return form_response(ErrorResponse())
     data = request.json
     check = User.string_check(64)
     schema = Schema({'username': check,
@@ -51,10 +50,8 @@ def register():
 
 
 @app.route('/login', methods=['POST'])
+@json_receiver
 def login():
-    if not request.is_json:
-        return form_response(ErrorResponse())
-
     data = request.json
     check = And(str, lambda s: len(s) > 0 and len(s) <= 64)
     schema = Schema({'username': check,
@@ -113,9 +110,8 @@ def posts():
 
 @app.route('/posts', methods=['POST'])
 @user_permission
+@json_receiver
 def add_post():
-    if not request.is_json:
-        return form_response(ErrorResponse())
     data = request.json
     schema = Schema({Optional("id"): int,
                      "user_id": LinkedinPost.id_check,
@@ -142,10 +138,8 @@ def get_post(post_id):
 
 @app.route('/posts/<post_id>', methods=['PUT'])
 @admin_permission
-# @user_permission
+@json_receiver
 def update_post(post_id):
-    if not request.is_json:
-        return form_response(ErrorResponse())
     data = request.json
     schema = Schema({Optional("id"): int,
                      Optional("user_id"): int,
@@ -163,7 +157,6 @@ def update_post(post_id):
 
 @app.route('/posts/<post_id>', methods=['DELETE'])
 @admin_permission
-# @user_permission
 def delete_post(post_id):
     post = LinkedinPost.query.filter_by(id=int(post_id)).first()
     if post:
@@ -188,10 +181,8 @@ def statistics_all():
 
 @app.route('/statistics/', methods=['POST'])
 @admin_permission
-# @user_permission
+@json_receiver
 def post_statistics():
-    if not request.is_json:
-        return form_response(ErrorResponse())
     data = request.json
     check = LinkedinPost.id_check
     schema = Schema({Optional("id"): int,
@@ -213,9 +204,20 @@ def post_statistics():
     return form_response(ErrorResponse("wrong data format"))
 
 
+
+@app.route('/statistics/<statistics_id>', methods=['GET'])
+@user_permission
+def statistics(statistics_id):
+    stat = LinkedinPostStatistic.query.filter_by(id=statistics_id).first()
+    if stat:
+        return form_response(SingleResponse(stat))
+    else:
+        return form_response(ErrorResponse())
+
+
 @app.route('/statistics/<statistics_id>', methods=['PUT'])
 @admin_permission
-# @user_permission
+@json_receiver
 def update_statistics(statistics_id):
     if not request.is_json:
         return form_response(ErrorResponse())
@@ -239,16 +241,6 @@ def update_statistics(statistics_id):
             return form_response(SingleResponse({}))
         return form_response(ErrorResponse("statistic does not exist"))
     return form_response(ErrorResponse("wrong data format"))
-
-
-@app.route('/statistics/<statistics_id>', methods=['GET'])
-@user_permission
-def statistics(statistics_id):
-    stat = LinkedinPostStatistic.query.filter_by(id=statistics_id).first()
-    if stat:
-        return form_response(SingleResponse(stat))
-    else:
-        return form_response(ErrorResponse())
 
 
 @app.route('/statistics/<statistics_id>', methods=['DELETE'])
