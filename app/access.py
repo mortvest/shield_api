@@ -31,6 +31,7 @@ class Permission():
                 return fn(*args, **kwargs)
         return wrapper
 
+
 # custom decorators for user group access
 admin_permission = Permission(['admin'])
 user_permission = Permission(['user', 'admin'])

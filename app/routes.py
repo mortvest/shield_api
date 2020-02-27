@@ -9,7 +9,7 @@ from flask_jwt_extended import (
 )
 from schema import Schema, And, Use, Optional
 
-from app import app, jwt, db
+from app import app, jwt
 from app.response import *
 from app.models import *
 from app.access import *

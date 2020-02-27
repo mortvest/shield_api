@@ -59,6 +59,10 @@ class User(Entity):
                                                 order_by=username
                              )
     )
+    posts = db.relationship('LinkedinPost',
+                            backref='user',
+                            lazy=True,
+                            cascade="delete, all")
     def __init__(self,
                  username,
                  password,
@@ -105,6 +109,17 @@ class User(Entity):
                  with_entities(UserGroup.group_name))
         return list(map(lambda x: x[0], query.all()))
 
+    def __posts_query(self):
+        return LinkedinPost.query.filter_by(user_id=self.id)
+
+    def get_posts(self):
+        return self.__posts_query().all()
+
+    def get_latest_post(self):
+        return (self.__posts_query().
+                order_by(LinkedinPost.created_at.desc()).
+                first())
+
 
 class LinkedinPost(Entity):
     __tablename__ = 'linkedin_post'
@@ -114,7 +129,6 @@ class LinkedinPost(Entity):
                                  backref='linkedin_post',
                                  lazy=True,
                                  cascade="delete, all")
-
 
     def __init__(self,
                  user_id,
@@ -139,6 +153,16 @@ class LinkedinPost(Entity):
                 "created_at": self.created_at,
                 "updated_at": self.updated_at
                 }
+    def __statisitcs_query(self):
+        return LinkedinPostStatistic.query.filter_by(linkedin_post_id=self.id)
+
+    def get_statistics(self):
+        return self.__statisitcs_query().all()
+
+    def get_latest_statistic(self):
+        return (self.__statisitcs_query().
+                order_by(LinkedinPostStatistic.created_at.desc()).
+                first())
 
 
 class LinkedinPostStatistic(Entity):
@@ -179,6 +203,16 @@ class LinkedinPostStatistic(Entity):
                 "created_at": self.created_at,
                 "updated_at": self.updated_at
                 }
+
+    def get_post(self):
+        return LinkedinPost.query.filter_by(id=self.linkedin_post_id).first()
+
+    def get_user(self):
+        query = (db.session.
+                 query(User).
+                 join(User.posts).
+                 filter(LinkedinPost.id == self.linkedin_post_id))
+        return query.first()
 
 
 class UserGroup(BaseModel):

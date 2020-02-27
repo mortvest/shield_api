@@ -72,4 +72,7 @@ def add_toydata_command():
     add_objects(linkedin_post_stats)
     db.session.commit()
 
+    print(users[0].get_posts())
+    print(users[0].get_latest_post())
+
     print("Done")
