@@ -1,3 +1,6 @@
+import datetime as dt
+from functools import wraps
+
 from flask import json, jsonify, request
 from flask_jwt_extended import (
     jwt_required,
@@ -12,9 +15,14 @@ from app.models import *
 from app.access import *
 
 
-# custom decorators for user group access
-admin_permission = Permission(['admin'])
-user_permission = Permission(['user', 'admin'])
+# def json_receiver(self, fn, *args, **kwargs):
+#     @wraps(fn)
+#     def wrapper(*args, **kwargs):
+#         if set.intersection(set(self.groups), set(claims['groups'])) == set():
+#             return form_response(AuthorizationErrorResponse())
+#         else:
+#             return fn(*args, **kwargs)
+#     return wrapper
 
 
 @app.route('/register', methods=['POST'])
@@ -22,7 +30,7 @@ def register():
     if not request.is_json:
         return form_response(ErrorResponse())
     data = request.json
-    check = And(str, lambda s: len(s) > 0 and len(s) <= 64)
+    check = User.string_check(64)
     schema = Schema({'username': check,
                      'password': check,
                      'first_name': check,
@@ -89,7 +97,7 @@ def user(user_id):
         return form_response(ErrorResponse())
 
 
-@app.route('/user/<user_id>/posts')
+@app.route('/user/<user_id>/posts', methods=['GET'])
 @user_permission
 def user_posts(user_id):
     posts = LinkedinPost.query.filter_by(user_id=user_id).paginate()
@@ -109,8 +117,9 @@ def add_post():
     if not request.is_json:
         return form_response(ErrorResponse())
     data = request.json
-    schema = Schema({"user_id": And(int, lambda i: i > 0),
-                     "content": And(str, lambda s: len(s) > 0 and len(s) <= 512)
+    schema = Schema({Optional("id"): int,
+                     "user_id": LinkedinPost.id_check,
+                     "content": LinkedinPost.string_check(512)
                     })
     if schema.is_valid(data):
         # check if user_id exists
@@ -140,7 +149,7 @@ def update_post(post_id):
     data = request.json
     schema = Schema({Optional("id"): int,
                      Optional("user_id"): int,
-                     "content": And(str, lambda s: len(s) > 0 and len(s) <= 512)
+                     "content": LinkedinPost.string_check(512)
                     })
     if schema.is_valid(data):
         post = LinkedinPost.query.filter_by(id=int(post_id)).first()
@@ -148,6 +157,7 @@ def update_post(post_id):
             post.content = data['content']
             post.update()
             return form_response(SingleResponse({}))
+        return form_response(ErrorResponse("post could not be found"))
     return form_response(ErrorResponse("wrong data format"))
 
 
@@ -162,21 +172,76 @@ def delete_post(post_id):
     return form_response(ErrorResponse("post could not be found"))
 
 
-@app.route('/posts/<post_id>/statistics')
+@app.route('/posts/<post_id>/statistics', methods=['GET'])
 @user_permission
 def post_stats(post_id):
     stats = LinkedinPostStatistic.query.filter_by(linkedin_post_id=post_id).paginate()
     return form_response(ListResponse(stats))
 
 
-@app.route('/statistics')
+@app.route('/statistics', methods=['GET'])
 @user_permission
 def statistics_all():
     statistics = LinkedinPostStatistic.query.paginate()
     return form_response(ListResponse(statistics))
 
 
-@app.route('/statistics/<statistics_id>')
+@app.route('/statistics/', methods=['POST'])
+@admin_permission
+# @user_permission
+def post_statistics():
+    if not request.is_json:
+        return form_response(ErrorResponse())
+    data = request.json
+    check = LinkedinPost.id_check
+    schema = Schema({Optional("id"): int,
+                     "linkedin_post_id": check,
+                     "num_views": check,
+                     "num_likes": check,
+                     "num_comments": check
+                    })
+    if schema.is_valid(data):
+        # check if linkedin_post_id exists
+        if LinkedinPost.query.filter_by(id=data['linkedin_post_id']).first():
+            stat = LinkedinPostStatistic(linkedin_post_id=data['linkedin_post_id'],
+                                         num_views=data['num_views'],
+                                         num_likes=data['num_likes'],
+                                         num_comments=data['num_comments'])
+            stat.add()
+            return form_response(SingleResponse({}))
+        return form_response(ErrorResponse("post does not exist"))
+    return form_response(ErrorResponse("wrong data format"))
+
+
+@app.route('/statistics/<statistics_id>', methods=['PUT'])
+@admin_permission
+# @user_permission
+def update_statistics(statistics_id):
+    if not request.is_json:
+        return form_response(ErrorResponse())
+    data = request.json
+    check = LinkedinPost.id_check
+    schema = Schema({Optional("id"): int,
+                     "linkedin_post_id": check,
+                     "num_views": check,
+                     "num_likes": check,
+                     "num_comments": check
+                    })
+    if schema.is_valid(data):
+        # check if statistic exists
+        stat = LinkedinPost.query.filter_by(id=int(statistics_id)).first()
+        if stat:
+            stat.linkedin_post_id = data['linkedin_post_id']
+            stat.num_views = data['num_views']
+            stat.num_likes = data['num_likes']
+            stat.num_comments = data['num_comments']
+            stat.update()
+            return form_response(SingleResponse({}))
+        return form_response(ErrorResponse("statistic does not exist"))
+    return form_response(ErrorResponse("wrong data format"))
+
+
+@app.route('/statistics/<statistics_id>', methods=['GET'])
 @user_permission
 def statistics(statistics_id):
     stat = LinkedinPostStatistic.query.filter_by(id=statistics_id).first()
@@ -184,3 +249,13 @@ def statistics(statistics_id):
         return form_response(SingleResponse(stat))
     else:
         return form_response(ErrorResponse())
+
+
+@app.route('/statistics/<statistics_id>', methods=['DELETE'])
+@admin_permission
+def delete_statistics(statistic_id):
+    stat = LinkedinPostStatistic.query.filter_by(id=int(statistic_id)).first()
+    if stat:
+        stat.delete()
+        return form_response(SingleResponse({}))
+    return form_response(ErrorResponse("statistic could not be found"))

@@ -11,6 +11,11 @@ from app.response import *
 from app.models import *
 
 
+# custom decorators for user group access
+admin_permission = Permission(['admin'])
+user_permission = Permission(['user', 'admin'])
+
+
 class Permission():
     """
     Decorator creator class for access restriction creation

@@ -2,6 +2,7 @@ from app import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from abc import ABC, abstractmethod
+from schema import Schema, And, Use, Optional
 
 
 class BaseModel(db.Model):
@@ -10,6 +11,11 @@ class BaseModel(db.Model):
     """
     __abstract__ = True
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_check = And(int, lambda i: i > 0)
+
+    @classmethod
+    def string_check(cls, length):
+        return And(str, lambda s: len(s) > 0 and len(s) <= length)
 
     def add(self):
         db.session.add(self)
@@ -20,6 +26,7 @@ class BaseModel(db.Model):
         db.session.commit()
 
     def update(self):
+        self.updated_at = datetime.now()
         db.session.commit()
 
 
