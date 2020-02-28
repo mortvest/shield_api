@@ -18,6 +18,10 @@ access token should be placed inside the HTTP header, using following format:
 
 `Authorization: Bearer <TOKEN>`
 
+The access token is revoked after sending a POST request to `localhost:5000/logout`
+
+
 ## Testing 
 In order to test the API, scripts from the curs_scripts directory can be used. 
-For more information, please refer the README.md file in the relevant directory.
+For more information about the JSON format for the POST, please refer the
+README.md.
