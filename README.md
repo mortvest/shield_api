@@ -10,6 +10,19 @@ Everything should run out of the box. It was tested on Arch Linux, and Windows
 `git config --global core.autocrlf false` before calling `git clone`). There are
 two containers: first running PostgreSQL database and second running flask.
 
+
+## Packages
+I am using Python 3.8.1 and in addition to the default packages, I added
+following dependecies to the project:
+
+| Package Name       | Purpose                                |
+| -------------      | :-------------:                        |
+| Flask-JWT-Extended | Advanced JWT token processing          |
+| python-dotenv      | Loading environment variables to Flask |
+| schema             | JSON format verification               |
+| SQLAlchemy-Utils   | Additional tools for schema creation   |
+
+
 ## Endpoints
 All the API endpoints from Section 2.2 are implemented, and following HTTP
 request methods and user privileges should be used:
