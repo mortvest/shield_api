@@ -180,7 +180,7 @@ def statistics_all():
 
 
 @app.route('/statistics/', methods=['POST'])
-@admin_permission
+@user_permission
 @json_receiver
 def post_statistics():
     data = request.json
@@ -245,9 +245,9 @@ def update_statistics(statistics_id):
 
 @app.route('/statistics/<statistics_id>', methods=['DELETE'])
 @admin_permission
-def delete_statistics(statistic_id):
-    stat = LinkedinPostStatistic.query.filter_by(id=int(statistic_id)).first()
+def delete_statistics(statistics_id):
+    stat = LinkedinPostStatistic.query.filter_by(id=int(statistics_id)).first()
     if stat:
         stat.delete()
         return form_response(SingleResponse({}))
-    return form_response(ErrorResponse("statistic could not be found"))
+    return form_response(ErrorResponse("statistics could not be found"))
