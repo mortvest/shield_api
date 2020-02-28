@@ -6,3 +6,5 @@ In order to build and start the server, run:
 `docker-compose up`
 
 Everything should run automatically
+
+## Token system

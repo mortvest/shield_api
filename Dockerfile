@@ -25,10 +25,8 @@ RUN chown -R shield_api:shield_api ./
 COPY wait-for-it.sh wait-for-it.sh 
 RUN apk add --no-cache bash
 RUN chmod +x wait-for-it.sh
+
 USER shield_api
 
 EXPOSE 5000
-# ENTRYPOINT ["./boot.sh"]
-
-# ENTRYPOINT ["./wait-for-it.sh" , "localhost:5432", "--strict" , "--timeout=10" , "--" , "./boot.sh"]
-ENTRYPOINT ["./wait-for-it.sh" , "localhost:5432", "--timeout=10" , "--" , "./boot.sh"]
+ENTRYPOINT ["./wait-for-it.sh" , "localhost:5432", "--timeout=5" , "--" , "./boot.sh"]

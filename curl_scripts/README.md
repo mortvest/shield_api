@@ -25,6 +25,8 @@ similarly to logout.
 ### get_multiple_posts
 ### get_single_statistic
 ### get_multiple_statistics
+### get_user_posts
+### get_post_statistics
 
 
 ## Admin methods

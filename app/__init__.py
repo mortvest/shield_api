@@ -48,8 +48,8 @@ def add_toydata_command():
     add_objects(groups)
     db.session.commit()
 
-    users = [models.User("dave11", "qwerty", "David", "Smith"),
-             models.User("micko1", "qwerty", "Mike", "Loke")
+    users = [models.User("user1", "qwerty", "John", "Loke"),
+             models.User("user2", "qwerty", "Michael", "Faraday")
     ]
     add_objects(users)
 
@@ -60,8 +60,8 @@ def add_toydata_command():
 
     db.session.commit()
 
-    linkedin_posts = [models.LinkedinPost(1, content="Content 1"),
-                     models.LinkedinPost(2, content="Content 2")
+    linkedin_posts = [models.LinkedinPost(1, content="Content of Post 1"),
+                      models.LinkedinPost(2, content="Content of Post 2")
     ]
     add_objects(linkedin_posts)
     db.session.commit()
@@ -72,7 +72,9 @@ def add_toydata_command():
     add_objects(linkedin_post_stats)
     db.session.commit()
 
-    print(users[0].get_posts())
-    print(users[0].get_latest_post())
+    if users[0].get_posts():
+        print("Status: working")
+    else:
+        print("Status: not working")
 
     print("Done")
