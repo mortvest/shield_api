@@ -51,6 +51,8 @@ def add_toydata_command():
     users = [models.User("user1", "qwerty", "John", "Loke"),
              models.User("user2", "qwerty", "Michael", "Faraday")
     ]
+    users[0].groups.append(groups[1])
+    users[1].groups.append(groups[1])
     add_objects(users)
 
     au = models.User("admin", "qwerty", "John", "Doe")

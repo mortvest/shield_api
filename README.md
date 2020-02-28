@@ -51,3 +51,6 @@ The access token is revoked after sending a POST request to `localhost:5000/logo
 In order to test the API, scripts from the curs_scripts directory can be used. 
 For more information about the JSON format for the POST requests, please refer to
 `curl_scripts/README.md`.
+
+## Configuration
+Environment variables for the database and the JWT are placed into the .env file.
