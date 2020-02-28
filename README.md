@@ -53,4 +53,4 @@ For more information about the JSON format for the POST requests, please refer t
 `curl_scripts/README.md`.
 
 ## Configuration
-Environment variables for the database and the JWT are placed into the .env file.
+Environment variables for the database and the JWT are placed into the `.env` file.
