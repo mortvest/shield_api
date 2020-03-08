@@ -18,7 +18,7 @@ class ErrorResponse(Response):
 
 
 class SingleResponse(Response):
-    def __init__(self, result):
+    def __init__(self, result={}):
         self.status_code = 1000
         self.message = "success"
         if isinstance(result, dict):

@@ -69,7 +69,7 @@ def register():
             group = UserGroup.query.filter_by(group_name="user").first()
             user.groups.append(group)
             user.add()
-            return SingleResponse({})
+            return SingleResponse()
     return ErrorResponse("wrong data format")
 
 
@@ -98,7 +98,7 @@ def logout():
     # revoke the token by adding it to the database
     rt = RevokedToken(jti)
     rt.add()
-    return SingleResponse({})
+    return SingleResponse()
 
 
 @route('/user')
@@ -146,7 +146,7 @@ def add_post():
         if User.query.filter_by(id=data['user_id']).first():
             post = LinkedinPost(data['user_id'], content=data['content'])
             post.add()
-            return SingleResponse({})
+            return SingleResponse()
     return ErrorResponse("wrong data format")
 
 
@@ -174,7 +174,7 @@ def update_post(post_id):
         if post:
             post.content = data['content']
             post.update()
-            return SingleResponse({})
+            return SingleResponse()
         return ErrorResponse("post could not be found")
     return ErrorResponse("wrong data format")
 
@@ -185,7 +185,7 @@ def delete_post(post_id):
     post = LinkedinPost.query.filter_by(id=int(post_id)).first()
     if post:
         post.delete()
-        return SingleResponse({})
+        return SingleResponse()
     return ErrorResponse("post could not be found")
 
 
@@ -223,7 +223,7 @@ def post_statistics():
                                          num_likes=data['num_likes'],
                                          num_comments=data['num_comments'])
             stat.add()
-            return SingleResponse({})
+            return SingleResponse()
         return ErrorResponse("post does not exist")
     return ErrorResponse("wrong data format")
 
@@ -262,7 +262,7 @@ def update_statistics(statistics_id):
             stat.num_likes = data['num_likes']
             stat.num_comments = data['num_comments']
             stat.update()
-            return SingleResponse({})
+            return SingleResponse()
         return ErrorResponse("statistic does not exist")
     return ErrorResponse("wrong data format")
 
@@ -273,5 +273,5 @@ def delete_statistics(statistics_id):
     stat = LinkedinPostStatistic.query.filter_by(id=int(statistics_id)).first()
     if stat:
         stat.delete()
-        return SingleResponse({})
+        return SingleResponse()
     return ErrorResponse("statistics could not be found")
