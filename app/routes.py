@@ -1,5 +1,7 @@
 import datetime as dt
+import traceback
 from functools import wraps
+
 
 from flask import json, jsonify, request
 from flask_jwt_extended import (
@@ -15,17 +17,39 @@ from app.models import *
 from app.access import *
 
 
+class route(object):
+    @classmethod
+    def form_response(cls, data):
+        return jsonify(data.serialize())
+
+    def __init__(self, path, methods=None):
+        self.path = path
+        self.methods = methods
+
+    def __call__(self, fn):
+        @app.route(self.path, methods=self.methods)
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            try:
+                result = fn(*args, **kwargs)
+                return route.form_response(result)
+            except:
+                traceback.print_exc()
+                return route.form_response(ErrorResponse(""))
+        return wrapper
+
+
 def json_receiver(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         if request.is_json:
             return fn(*args, **kwargs)
         else:
-            return form_response(ErrorResponse("expecting a json"))
+            return ErrorResponse("expecting a json")
     return wrapper
 
 
-@app.route('/register', methods=['POST'])
+@route('/register', methods=['POST'])
 @json_receiver
 def register():
     data = request.json
@@ -39,17 +63,17 @@ def register():
         # check if username is already in the database
         already_exists = User.query.filter_by(username=data["username"]).first()
         if already_exists:
-            return form_response(ErrorResponse("username already exists"))
+            return ErrorResponse("username already exists")
         else:
             user = User(data["username"], data["password"], data["first_name"], data["last_name"])
             group = UserGroup.query.filter_by(group_name="user").first()
             user.groups.append(group)
             user.add()
-            return form_response(SingleResponse({}))
-    return form_response(ErrorResponse("wrong data format"))
+            return SingleResponse({})
+    return ErrorResponse("wrong data format")
 
 
-@app.route('/login', methods=['POST'])
+@route('/login', methods=['POST'])
 @json_receiver
 def login():
     data = request.json
@@ -62,11 +86,11 @@ def login():
         user = User.query.filter_by(username=data["username"]).first()
         if user and user.check_password(data["password"]):
             access_token = create_access_token(identity=data["username"])
-            return form_response(SingleResponse({"token": access_token}))
-    return form_response(ErrorResponse("wrong username or password"))
+            return SingleResponse({"token": access_token})
+    return ErrorResponse("wrong username or password")
 
 
-@app.route('/logout', methods=['POST'])
+@route('/logout', methods=['POST'])
 @user_permission
 def logout():
     # get the token data
@@ -74,41 +98,41 @@ def logout():
     # revoke the token by adding it to the database
     rt = RevokedToken(jti)
     rt.add()
-    return form_response(SingleResponse({}))
+    return SingleResponse({})
 
 
-@app.route('/user')
+@route('/user')
 @admin_permission
 def users():
     users = User.query.paginate()
-    return form_response(ListResponse(users))
+    return ListResponse(users)
 
 
-@app.route('/user/<user_id>/', methods=['GET'])
+@route('/user/<user_id>/', methods=['GET'])
 @admin_permission
 def user(user_id):
     user = User.query.filter_by(id=user_id).first()
     if user:
-        return form_response(SingleResponse(user))
+        return SingleResponse(user)
     else:
-        return form_response(ErrorResponse())
+        return ErrorResponse()
 
 
-@app.route('/user/<user_id>/posts', methods=['GET'])
+@route('/user/<user_id>/posts', methods=['GET'])
 @user_permission
 def user_posts(user_id):
     posts = LinkedinPost.query.filter_by(user_id=user_id).paginate()
-    return form_response(ListResponse(posts))
+    return ListResponse(posts)
 
 
-@app.route('/posts', methods=['GET'])
+@route('/posts', methods=['GET'])
 @user_permission
 def posts():
     posts = LinkedinPost.query.paginate()
-    return form_response(ListResponse(posts))
+    return ListResponse(posts)
 
 
-@app.route('/posts', methods=['POST'])
+@route('/posts', methods=['POST'])
 @user_permission
 @json_receiver
 def add_post():
@@ -122,21 +146,21 @@ def add_post():
         if User.query.filter_by(id=data['user_id']).first():
             post = LinkedinPost(data['user_id'], content=data['content'])
             post.add()
-            return form_response(SingleResponse({}))
-    return form_response(ErrorResponse("wrong data format"))
+            return SingleResponse({})
+    return ErrorResponse("wrong data format")
 
 
-@app.route('/posts/<post_id>', methods=['GET'])
+@route('/posts/<post_id>', methods=['GET'])
 @user_permission
 def get_post(post_id):
     post = User.query.filter_by(id=post_id).first()
     if post:
-        return form_response(SingleResponse(post))
+        return SingleResponse(post)
     else:
-        return form_response(ErrorResponse())
+        return ErrorResponse()
 
 
-@app.route('/posts/<post_id>', methods=['PUT'])
+@route('/posts/<post_id>', methods=['PUT'])
 @admin_permission
 @json_receiver
 def update_post(post_id):
@@ -150,36 +174,36 @@ def update_post(post_id):
         if post:
             post.content = data['content']
             post.update()
-            return form_response(SingleResponse({}))
-        return form_response(ErrorResponse("post could not be found"))
-    return form_response(ErrorResponse("wrong data format"))
+            return SingleResponse({})
+        return ErrorResponse("post could not be found")
+    return ErrorResponse("wrong data format")
 
 
-@app.route('/posts/<post_id>', methods=['DELETE'])
+@route('/posts/<post_id>', methods=['DELETE'])
 @admin_permission
 def delete_post(post_id):
     post = LinkedinPost.query.filter_by(id=int(post_id)).first()
     if post:
         post.delete()
-        return form_response(SingleResponse({}))
-    return form_response(ErrorResponse("post could not be found"))
+        return SingleResponse({})
+    return ErrorResponse("post could not be found")
 
 
-@app.route('/posts/<post_id>/statistics', methods=['GET'])
+@route('/posts/<post_id>/statistics', methods=['GET'])
 @user_permission
 def post_stats(post_id):
     stats = LinkedinPostStatistic.query.filter_by(linkedin_post_id=post_id).paginate()
-    return form_response(ListResponse(stats))
+    return ListResponse(stats)
 
 
-@app.route('/statistics', methods=['GET'])
+@route('/statistics', methods=['GET'])
 @user_permission
 def statistics_all():
     statistics = LinkedinPostStatistic.query.paginate()
-    return form_response(ListResponse(statistics))
+    return ListResponse(statistics)
 
 
-@app.route('/statistics/', methods=['POST'])
+@route('/statistics/', methods=['POST'])
 @user_permission
 @json_receiver
 def post_statistics():
@@ -199,28 +223,28 @@ def post_statistics():
                                          num_likes=data['num_likes'],
                                          num_comments=data['num_comments'])
             stat.add()
-            return form_response(SingleResponse({}))
-        return form_response(ErrorResponse("post does not exist"))
-    return form_response(ErrorResponse("wrong data format"))
+            return SingleResponse({})
+        return ErrorResponse("post does not exist")
+    return ErrorResponse("wrong data format")
 
 
 
-@app.route('/statistics/<statistics_id>', methods=['GET'])
+@route('/statistics/<statistics_id>', methods=['GET'])
 @user_permission
 def statistics(statistics_id):
     stat = LinkedinPostStatistic.query.filter_by(id=statistics_id).first()
     if stat:
-        return form_response(SingleResponse(stat))
+        return SingleResponse(stat)
     else:
-        return form_response(ErrorResponse())
+        return ErrorResponse()
 
 
-@app.route('/statistics/<statistics_id>', methods=['PUT'])
+@route('/statistics/<statistics_id>', methods=['PUT'])
 @admin_permission
 @json_receiver
 def update_statistics(statistics_id):
     if not request.is_json:
-        return form_response(ErrorResponse())
+        return ErrorResponse()
     data = request.json
     check = LinkedinPost.id_check
     schema = Schema({Optional("id"): int,
@@ -238,16 +262,16 @@ def update_statistics(statistics_id):
             stat.num_likes = data['num_likes']
             stat.num_comments = data['num_comments']
             stat.update()
-            return form_response(SingleResponse({}))
-        return form_response(ErrorResponse("statistic does not exist"))
-    return form_response(ErrorResponse("wrong data format"))
+            return SingleResponse({})
+        return ErrorResponse("statistic does not exist")
+    return ErrorResponse("wrong data format")
 
 
-@app.route('/statistics/<statistics_id>', methods=['DELETE'])
+@route('/statistics/<statistics_id>', methods=['DELETE'])
 @admin_permission
 def delete_statistics(statistics_id):
     stat = LinkedinPostStatistic.query.filter_by(id=int(statistics_id)).first()
     if stat:
         stat.delete()
-        return form_response(SingleResponse({}))
-    return form_response(ErrorResponse("statistics could not be found"))
+        return SingleResponse({})
+    return ErrorResponse("statistics could not be found")

@@ -23,14 +23,10 @@ class Permission():
     def __call__(self, fn, *args, **kwargs):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            print("Wrapper!")
             verify_jwt_in_request()
             claims = get_jwt_claims()
-            print(claims)
             if set.intersection(set(self.groups), set(claims['groups'])) == set():
-                print(set(self.groups))
-                print(set.intersection(set(self.groups), set(claims['groups'])))
-                return form_response(AuthorizationErrorResponse())
+                return AuthorizationErrorResponse()
             else:
                 return fn(*args, **kwargs)
         return wrapper
@@ -42,17 +38,17 @@ user_permission = Permission(['user', 'admin'])
 
 @jwt.unauthorized_loader
 def unauthorized_loader_callback(_):
-    return form_response(AuthorizationErrorResponse())
+    return AuthorizationErrorResponse()
 
 
 @jwt.invalid_token_loader
 def invalid_token_loader_callback(_):
-    return form_response(AuthorizationErrorResponse())
+    return AuthorizationErrorResponse()
 
 
 @jwt.revoked_token_loader
 def revoked_token_loader_callback():
-    return form_response(AuthorizationErrorResponse())
+    return AuthorizationErrorResponse()
 
 
 @jwt.token_in_blacklist_loader
@@ -69,7 +65,3 @@ def add_claims_to_access_token(identity):
         return {'groups': groups}
     else:
         raise ValueError("User was not found")
-
-
-def form_response(data):
-    return jsonify(data.serialize())
