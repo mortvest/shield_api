@@ -58,7 +58,9 @@ access token should be placed inside the HTTP header, using following format:
 
 `Authorization: Bearer <TOKEN>`
 
-The access token is revoked after sending a POST request to `localhost:5000/logout`
+The access token is revoked after sending a POST request to `localhost:5000/logout`. 
+Arbitrary number of user groups can be added and users can be a member of multiple groups.
+Access to endpoints could be restricted to any number of groups.
 
 ## Testing 
 In order to test the API, scripts from the `curl_scripts` directory can be used. 
