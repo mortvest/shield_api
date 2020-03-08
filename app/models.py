@@ -26,7 +26,6 @@ class BaseModel(db.Model):
         db.session.commit()
 
     def update(self):
-        self.updated_at = datetime.now()
         db.session.commit()
 
 
@@ -37,6 +36,10 @@ class Entity(BaseModel):
     __abstract__ = True
     created_at = db.Column(db.DateTime())
     updated_at = db.Column(db.DateTime())
+
+    def update(self):
+        self.updated_at = datetime.now()
+        db.session.commit()
 
 
 # Many-to-many relation between UserGroup and User
